@@ -2,6 +2,7 @@
 # ECE 523 Engineering Applications of Machine Learning and Data Analytics
 # Professor Ditzler
 # Linear and Quadratic Classifiers
+import math
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -16,7 +17,7 @@ def normal_samples():
     mean_3 = np.array([2, 3])
     covariance_matrix = np.identity(2)  # covariance matrix is the identity matrix
     # we will be sampling from a standard normal distribution, this will produce 30 sample with d features [x1, x2, x3... xd]
-    dataset1 = np.array(np.random.multivariate_normal(mean_1, covariance_matrix, 100)) # produce a 30 by 2 matrix
+    dataset1 = np.array(np.random.multivariate_normal(mean_1, covariance_matrix, 100))  # produce a 30 by 2 matrix
     dataset2 = np.array(np.random.multivariate_normal(mean_2, covariance_matrix, 100))  # produce a 30 by 2 matrix
     dataset3 = np.array(np.random.multivariate_normal(mean_3, covariance_matrix, 100))  # produce a 30 by 2 matrix
     # training set
@@ -26,17 +27,19 @@ def normal_samples():
     #     dataset.append(np.random.multivariate_normal(mean_3, covariance_matrix))
     return dataset1, dataset2, dataset3
 
+
 def learn_parameters():
     X1, X2, X3 = normal_samples()  # produce the training data set so we can estimate our mean and covariance
     # here is the process of estimating the mean and covariance
     # we need to learn the parameters of the three distributions to then use in the three discriminants
-    mu_1 = X1.T.mean(axis=1) # finds the distribution for one
+    mu_1 = X1.T.mean(axis=1)  # finds the distribution for one
     cov_1 = np.cov(X1.T)
     mu_2 = X2.T.mean(axis=1)  # finds the distribution for 2
     cov_2 = np.cov(X2.T)
     mu_3 = X3.T.mean(axis=1)  # finds the distribution for one
     cov_3 = np.cov(X3.T)
     return mu_1, cov_1, mu_2, cov_2, mu_3, cov_3
+
 
 def test_samples():
     samples = 30
@@ -57,6 +60,7 @@ def classifier(sample, mean_i, cov_i, prob_of_class_i):
     g_x_i = -.5 * np.matmul(np.matmul((sample - mean_i), np.linalg.inv(cov_i)), (sample - mean_i).T) \
             - .5 * 2 * np.log(2 * np.pi) - .5 * np.log(np.linalg.det(cov_i)) + np.log(prob_of_class_i)
     return g_x_i
+
 
 def test():
     prob_of_class_1 = prob_of_class_2 = prob_of_class_3 = 33.33
@@ -99,6 +103,7 @@ def test():
             class_3.append(sample[0])
     graph(class_1, class_2, class_3)
 
+
 # working
 def graph(class_1, class_2, class_3):
     fig, ax = plt.subplots()
@@ -132,7 +137,20 @@ def mahalanobis_distance(point, mu, cov):
     return np.matmul(np.matmul((point - mu), np.linalg.inv(cov)), (point - mu).T)[0]
 
 
+def naive_bayes(x, mean, cov):
+    # P(w_j) = (total of number of points from this class)/(total number of points)
+    p_w_j = .3333333
+    # P(w)*P(x|w) = P(w_j) * (product from 1 to p) of (p(x_i|w))
+    naive_bayes_result = p_w_j * (p_x_i_given_w(x[0], mean, cov) + p_x_i_given_w(x[1], mean, cov))
+    # (p(x_i|w)) is a gaussian probability distribution
+
+
+def p_x_i_given_w(x_i, mean, cov):
+    return (1 / (math.sqrt(2 * np.pi * cov ** 2))) * np.exp ** (-1 * ((x_i - mean) ** 2) / (2 * cov ** 2))
+
+
 def main():
     test()
+
 
 main()

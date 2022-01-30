@@ -9,23 +9,34 @@ from matplotlib.lines import Line2D
 
 
 def normal_samples():
-    samples = 100
+    samples = 10000
     # distribution 1
     mean_1 = np.array([0, 0])  # mean vector which is the 0 vector for simplicity
     mean_2 = np.array([-2.6, -2])
     mean_3 = np.array([2, 3])
     covariance_matrix = np.identity(2)  # covariance matrix is the identity matrix
     # we will be sampling from a standard normal distribution, this will produce 30 sample with d features [x1, x2, x3... xd]
-    dataset = []
+    dataset1 = np.array(np.random.multivariate_normal(mean_1, covariance_matrix, 100)) # produce a 30 by 2 matrix
+    dataset2 = np.array(np.random.multivariate_normal(mean_2, covariance_matrix, 100))  # produce a 30 by 2 matrix
+    dataset3 = np.array(np.random.multivariate_normal(mean_3, covariance_matrix, 100))  # produce a 30 by 2 matrix
     # training set
-    for i in range(samples):
-        dataset.append(np.random.multivariate_normal(mean_1, covariance_matrix))
-    for i in range(samples):
-        dataset.append(np.random.multivariate_normal(mean_2, covariance_matrix))
-    for i in range(samples):
-        dataset.append(np.random.multivariate_normal(mean_3, covariance_matrix))
-    return dataset, mean_1, mean_2, mean_3, covariance_matrix
+    # for i in range(samples):
+    #     dataset.append(np.random.multivariate_normal(mean_2, covariance_matrix))
+    # for i in range(samples):
+    #     dataset.append(np.random.multivariate_normal(mean_3, covariance_matrix))
+    return dataset1, dataset2, dataset3
 
+def learn_parameters():
+    X1, X2, X3 = normal_samples()  # produce the training data set so we can estimate our mean and covariance
+    # here is the process of estimating the mean and covariance
+    # we need to learn the parameters of the three distributions to then use in the three discriminants
+    mu_1 = X1.T.mean(axis=1) # finds the distribution for one
+    cov_1 = np.cov(X1.T)
+    mu_2 = X2.T.mean(axis=1)  # finds the distribution for 2
+    cov_2 = np.cov(X2.T)
+    mu_3 = X3.T.mean(axis=1)  # finds the distribution for one
+    cov_3 = np.cov(X3.T)
+    return mu_1, cov_1, mu_2, cov_2, mu_3, cov_3
 
 def test_samples():
     samples = 30
@@ -34,37 +45,32 @@ def test_samples():
     mean_2 = np.array([-2.6, -2])
     mean_3 = np.array([2, 3])
     covariance_matrix = np.identity(2)  # covariance matrix is the identity matrix
-    # we will be sampling from a standard normal distribution, this will produce 30 sample with d features [x1, x2, x3... xd]
-    dataset = []
-    # training set
-    for i in range(samples):
-        dataset.append(np.random.multivariate_normal(mean_1, covariance_matrix))
-    for i in range(samples):
-        dataset.append(np.random.multivariate_normal(mean_2, covariance_matrix))
-    for i in range(samples):
-        dataset.append(np.random.multivariate_normal(mean_3, covariance_matrix))
-    return dataset, mean_1, mean_2, mean_3, covariance_matrix
+    dataset1 = np.array(np.random.multivariate_normal(mean_1, covariance_matrix, 100))  # produce a 30 by 2 matrix
+    dataset2 = np.array(np.random.multivariate_normal(mean_2, covariance_matrix, 100))  # produce a 30 by 2 matrix
+    dataset3 = np.array(np.random.multivariate_normal(mean_3, covariance_matrix, 100))  # produce a 30 by 2 matrix
+    # creating one large dataset
+    dataset = np.concatenate((dataset1, dataset2, dataset3), axis=0)
+    return dataset
 
 
-def classify():
-    dimensions = 2
+def classifier(sample, mean_i, cov_i, prob_of_class_i):
+    g_x_i = -.5 * np.matmul(np.matmul((sample - mean_i), np.linalg.inv(cov_i)), (sample - mean_i).T) \
+            - .5 * 2 * np.log(2 * np.pi) - .5 * np.log(np.linalg.det(cov_i)) + np.log(prob_of_class_i)
+    return g_x_i
+
+def test():
     prob_of_class_1 = prob_of_class_2 = prob_of_class_3 = 33.33
-    dataset, mean_1, mean_2, mean_3, covariance_matrix = normal_samples()
+    mean_1, cov_1, mean_2, cov_2, mean_3, cov_3 = learn_parameters()
     mean_1 = mean_1[np.newaxis]
     mean_2 = mean_2[np.newaxis]
     mean_3 = mean_3[np.newaxis]
     classified_data = []
-    for sample in dataset:
+    test_data = test_samples()
+    for sample in test_data:
         sample = sample[np.newaxis]
-        g_x_1 = -.5 * np.matmul(np.matmul((sample - mean_1), np.linalg.inv(covariance_matrix)), (sample - mean_1).T) \
-                - .5 * dimensions * np.log(2 * np.pi) - .5 * np.log(
-            np.linalg.det(covariance_matrix)) + np.log(prob_of_class_1)
-        g_x_2 = -.5 * np.matmul(np.matmul((sample - mean_2), np.linalg.inv(covariance_matrix)), (sample - mean_2).T) \
-                - .5 * dimensions * np.log(2 * np.pi) - .5 * np.log(np.linalg.det(covariance_matrix)) + np.log(
-            prob_of_class_2)
-        g_x_3 = -.5 * np.matmul(np.matmul((sample - mean_3), np.linalg.inv(covariance_matrix)), (sample - mean_3).T) \
-                - .5 * dimensions * np.log(2 * np.pi) - .5 * np.log(np.linalg.det(covariance_matrix)) + np.log(
-            prob_of_class_3)
+        g_x_1 = classifier(sample, mean_1, cov_1, prob_of_class_1)
+        g_x_2 = classifier(sample, mean_2, cov_2, prob_of_class_2)
+        g_x_3 = classifier(sample, mean_3, cov_3, prob_of_class_3)
         classified_data.append((sample, g_x_1, g_x_2, g_x_3))
     # what class does this belong to?
     class_1 = []
@@ -93,7 +99,7 @@ def classify():
             class_3.append(sample[0])
     graph(class_1, class_2, class_3)
 
-
+# working
 def graph(class_1, class_2, class_3):
     fig, ax = plt.subplots()
     print(" Data Points this algorithm thinks is generated by class_1", len(class_1))
@@ -126,4 +132,7 @@ def mahalanobis_distance(point, mu, cov):
     return np.matmul(np.matmul((point - mu), np.linalg.inv(cov)), (point - mu).T)[0]
 
 
-classify()
+def main():
+    test()
+
+main()
